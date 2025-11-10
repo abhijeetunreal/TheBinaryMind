@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Indefinite Debate Exhibition</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400&display=swap" rel="stylesheet">
+    <style>
+        /* --- Base Setup --- */
+        body {
+            background-color: #ffffff;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            font-weight: 300;
+            margin: 0;
+            height: 100vh;
+            overflow: hidden;
+            color: #aaaaaa; /* All text defaults to light grey */
+        }
+
+        /* --- The Stage --- */
+        #debate-stage {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            position: relative;
+            padding: 0 10%;
+            box-sizing: border-box;
+        }
+
+        #debate-stage.hidden {
+            display: none;
+        }
+
+        /* --- Close Button --- */
+        #close-debate-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            background-color: transparent;
+            border: 1px solid #eeeeee;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 1;
+            pointer-events: auto;
+            transition: opacity 0.3s ease, border-color 0.2s ease, background-color 0.2s ease;
+            z-index: 1000;
+            font-size: 24px;
+            line-height: 1;
+            color: #aaaaaa;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            font-weight: 300;
+        }
+
+        #close-debate-button.auto-hidden {
+            opacity: 0;
+            pointer-events: auto;
+        }
+
+        #close-debate-button.auto-hidden:hover {
+            opacity: 1;
+        }
+
+        #close-debate-button:hover {
+            border-color: #333333;
+            background-color: #ffffff;
+            color: #333333;
+        }
+
+        #close-debate-button:active {
+            transform: scale(0.95);
+        }
+
+        /* --- Loading Status --- */
+        #status {
+            font-size: 0.9rem;
+            color: #333;
+            font-weight: 400;
+            text-align: center;
+        }
+
+        /* --- The "Energetic Line" --- */
+        .connector-line {
+            width: 100%;
+            height: 1px;
+            background-color: #eeeeee;
+            position: absolute;
+        }
+
+        /* --- The Debate Text --- */
+        .debate-text {
+            position: absolute;
+            width: 80%;
+            font-size: 1.4rem;
+            line-height: 1.4;
+            padding-left: 2rem;
+            padding-right: 2rem;
+            box-sizing: border-box;
+            
+            /* Changed from opacity: 0 */
+            color: #cccccc; /* Inactive text is very faint */
+            transition: color 0.5s ease-in-out;
+        }
+        
+        /* Ensure Entity 1 content box grows dynamically */
+        #entity-1-text.debate-text {
+            height: auto;
+            min-height: auto;
+            max-height: none;
+            overflow: visible;
+        }
+        
+        /* Ensure Entity 2 content box grows dynamically */
+        #entity-2-text.debate-text {
+            height: auto;
+            min-height: auto;
+            max-height: none;
+            overflow: visible;
+        }
+
+        /* --- Blur In Animation --- */
+        .blur-in-word {
+            display: inline-block;
+            opacity: 0;
+            filter: blur(10px);
+            animation: blurIn 0.3s ease-out forwards;
+        }
+
+        @keyframes blurIn {
+            to {
+                opacity: 1;
+                filter: blur(0px);
+            }
+        }
+
+        /* Specific position for Entity 1 (above the line) */
+        #entity-1-text {
+            bottom: 52%;
+            text-align: left;
+            left: 0;
+            height: auto;
+            min-height: auto;
+            max-height: none;
+        }
+
+        /* Specific position for Entity 2 (below the line) */
+        #entity-2-text {
+            top: 52%;
+            right: 0;
+            text-align: left;
+            height: auto;
+            min-height: auto;
+            max-height: none;
+        }
+
+        /* Add margin to "Thinking..." text for both entities */
+        #entity-1-text.thinking {
+            padding-left: 2rem;
+            padding-right: 2rem;
+        }
+
+        /* Right-align "Thinking..." text for Entity 2 with proper margin */
+        #entity-2-text.thinking {
+            text-align: right;
+            padding-left: 2rem;
+            padding-right: 2rem;
+        }
+
+        /* --- The "Active" State --- */
+        .debate-text.active {
+            /* When active, text is dark and readable */
+            color: #333333;
+        }
+
+        /* --- Landing Page --- */
+        #landing-page {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: center;
+            height: 100vh;
+            position: relative;
+            padding-bottom: 60px;
+        }
+
+        #landing-page.hidden {
+            display: none;
+        }
+
+        /* --- Morphing Text Container --- */
+        #morphing-text-container {
+            position: absolute;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%;
+            max-width: 800px;
+            height: 120px;
+            text-align: center;
+            /* The core of the effect: applies the SVG filter and a slight blur */
+            filter: url(#threshold) blur(0.6px);
+        }
+
+        #morphing-text-container .morph-text {
+            position: absolute;
+            inset: 0;
+            margin: auto;
+            display: inline-block;
+            width: 100%;
+            font-size: 40pt;
+            line-height: 1;
+            font-weight: bold;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            color: #333333;
+            user-select: none; /* Prevents highlighting during rapid changes */
+        }
+
+        @media (min-width: 768px) {
+            #morphing-text-container {
+                height: 150px;
+            }
+            #morphing-text-container .morph-text {
+                font-size: 60pt;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            #morphing-text-container .morph-text {
+                font-size: 6rem;
+            }
+        }
+
+        /* --- Button and Disclaimer --- */
+        #landing-button-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        #start-button {
+            padding: 14px 36px;
+            font-size: 1rem;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            font-weight: 500;
+            background-color: transparent;
+            color: #333333;
+            border: 1px solid #333333;
+            border-radius: 9999px;
+            cursor: pointer;
+            letter-spacing: 0.02em;
+            transition: background-color 0.2s ease, color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
+        }
+
+        #start-button:hover {
+            background-color: #333333;
+            color: #ffffff;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+        }
+
+        #start-button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+
+        #start-button:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(51,51,51,0.25);
+        }
+
+        #start-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        #disclaimer {
+            color: #999999;
+            font-size: 0.85rem;
+            text-align: center;
+            max-width: 500px;
+            line-height: 1.5;
+        }
+
+        /* --- Model Load Percentage --- */
+        #model-load-container {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        #model-load-container.visible {
+            display: flex;
+        }
+
+        /* --- SVG Filters --- */
+        #filters {
+            position: fixed;
+            height: 0;
+            width: 0;
+        }
+
+        /* --- Configuration Page --- */
+        #configuration-page {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            padding: 60px 20px;
+            box-sizing: border-box;
+            overflow-y: auto;
+        }
+
+        #configuration-page.hidden {
+            display: none;
+        }
+
+        .config-container {
+            max-width: 700px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 40px;
+        }
+
+        .config-section {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .config-label {
+            color: #333333;
+            font-size: 0.9rem;
+            font-weight: 400;
+            letter-spacing: 0.02em;
+        }
+
+        .config-input {
+            width: 100%;
+            padding: 0;
+            font-size: 1rem;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            font-weight: 300;
+            color: #333333;
+            background-color: transparent;
+            border: none;
+            border-bottom: 1px solid #eeeeee;
+            border-radius: 0;
+            box-sizing: border-box;
+            transition: border-color 0.2s ease;
+            padding-bottom: 8px;
+        }
+
+        .config-input:focus {
+            outline: none;
+            border-bottom-color: #333333;
+        }
+
+        .config-input::placeholder {
+            color: #aaaaaa;
+        }
+
+        .config-textarea {
+            width: 100%;
+            min-height: 120px;
+            padding: 0;
+            font-size: 0.95rem;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            font-weight: 300;
+            color: #333333;
+            background-color: transparent;
+            border: none;
+            border-bottom: 1px solid #eeeeee;
+            border-radius: 0;
+            box-sizing: border-box;
+            resize: vertical;
+            transition: border-color 0.2s ease;
+            line-height: 1.6;
+            padding-bottom: 8px;
+        }
+
+        .config-textarea:focus {
+            outline: none;
+            border-bottom-color: #333333;
+        }
+
+        .config-textarea::placeholder {
+            color: #aaaaaa;
+        }
+
+        .config-button-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        #start-debate-button {
+            padding: 14px 36px;
+            font-size: 1rem;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            font-weight: 500;
+            background-color: transparent;
+            color: #333333;
+            border: 1px solid #333333;
+            border-radius: 9999px;
+            cursor: pointer;
+            letter-spacing: 0.02em;
+            transition: background-color 0.2s ease, color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
+        }
+
+        #start-debate-button:hover {
+            background-color: #333333;
+            color: #ffffff;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+        }
+
+        #start-debate-button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+
+        #start-debate-button:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(51,51,51,0.25);
+        }
+    </style>
+</head>
+<body>
+    <!-- SVG Filters for Morphing Effect -->
+    <svg id="filters" preserveAspectRatio="xMidYMid slice">
+        <defs>
+            <filter id="threshold">
+                <feColorMatrix
+                    in="SourceGraphic"
+                    type="matrix"
+                    values="1 0 0 0 0
+                            0 1 0 0 0
+                            0 0 1 0 0
+                            0 0 0 255 -140"
+                />
+            </filter>
+        </defs>
+    </svg>
+
+    <!-- Landing Page -->
+    <div id="landing-page">
+        <div id="morphing-text-container">
+            <span id="morph-text-1" class="morph-text"></span>
+            <span id="morph-text-2" class="morph-text"></span>
+        </div>
+        <div id="landing-button-container">
+            <button id="start-button">Start</button>
+            <div id="disclaimer">This project uses a large language model that will be downloaded to your device. The model size is approximately 1GB and may take a few minutes to download depending on your internet connection.</div>
+        </div>
+        <div id="model-load-container">
+            <div id="status">Initializing AI Engine...</div>
+        </div>
+    </div>
+
+    <!-- Configuration Page -->
+    <div id="configuration-page" class="hidden">
+        <div class="config-container">
+            <div class="config-section">
+                <label class="config-label" for="debate-topic">Debate Topic</label>
+                <input type="text" id="debate-topic" class="config-input" placeholder="Enter the topic for the debate...">
+            </div>
+            <div class="config-section">
+                <label class="config-label" for="personality-1-name">Personality 1 Name</label>
+                <input type="text" id="personality-1-name" class="config-input" placeholder="Enter name for personality 1...">
+            </div>
+            <div class="config-section">
+                <label class="config-label" for="personality-1">Personality 1 Description</label>
+                <textarea id="personality-1" class="config-textarea" placeholder="Enter the personality description..."></textarea>
+            </div>
+            <div class="config-section">
+                <label class="config-label" for="personality-2-name">Personality 2 Name</label>
+                <input type="text" id="personality-2-name" class="config-input" placeholder="Enter name for personality 2...">
+            </div>
+            <div class="config-section">
+                <label class="config-label" for="personality-2">Personality 2 Description</label>
+                <textarea id="personality-2" class="config-textarea" placeholder="Enter the personality description..."></textarea>
+            </div>
+            <div class="config-button-container">
+                <button id="start-debate-button">Start Debate</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="debate-stage" class="hidden">
+        <button id="close-debate-button" title="Close conversation">×</button>
+        <div class="connector-line"></div>
+        <div id="entity-1-text" class="debate-text"></div>
+        <div id="entity-2-text" class="debate-text"></div>
+    </div>
+    
+    <script type="module" src="main.js"></script>
+</body>
+</html>
